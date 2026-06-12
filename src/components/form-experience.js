@@ -36,21 +36,21 @@ function renderExpList(data) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">公司</label>
-          <input class="form-input exp-field" data-idx="${i}" data-field="company" value="${esc(exp.company)}" placeholder="公司名称">
+           <input class="form-input exp-field" data-idx="${i}" data-field="company" value="${esc(clean(exp.company))}" placeholder="公司名称">
         </div>
         <div class="form-group">
           <label class="form-label">职位</label>
-          <input class="form-input exp-field" data-idx="${i}" data-field="role" value="${esc(exp.role)}" placeholder="你的职位">
+           <input class="form-input exp-field" data-idx="${i}" data-field="role" value="${esc(clean(exp.role))}" placeholder="你的职位">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">开始时间</label>
-          <input class="form-input exp-field" data-idx="${i}" data-field="startDate" value="${esc(exp.startDate)}" placeholder="YYYY.MM">
+           <input class="form-input exp-field" data-idx="${i}" data-field="startDate" value="${esc(clean(exp.startDate))}" placeholder="YYYY.MM">
         </div>
         <div class="form-group">
           <label class="form-label">结束时间</label>
-          <input class="form-input exp-field" data-idx="${i}" data-field="endDate" value="${esc(exp.endDate)}" placeholder="YYYY.MM 或 至今">
+           <input class="form-input exp-field" data-idx="${i}" data-field="endDate" value="${esc(clean(exp.endDate))}" placeholder="YYYY.MM 或 至今">
         </div>
       </div>
       <div class="form-group">
@@ -72,7 +72,7 @@ function renderBullets(entry, entryIdx, type) {
   const container = document.getElementById(`bullets-${type}-${entryIdx}`);
   container.innerHTML = entry.bullets.map((bullet, bIdx) => `
     <div class="bullet-item" data-bullet-idx="${bIdx}">
-      <textarea class="form-textarea bullet-text" data-entry="${entryIdx}" data-bullet="${bIdx}" placeholder="描述你的工作内容和成果...">${esc(bullet.useEnhanced && bullet.enhanced ? bullet.enhanced : bullet.original)}</textarea>
+      <textarea class="form-textarea bullet-text" data-entry="${entryIdx}" data-bullet="${bIdx}" placeholder="描述你的工作内容和成果...">${esc(clean(bullet.useEnhanced && bullet.enhanced ? bullet.enhanced : bullet.original))}</textarea>
       <div class="bullet-actions">
         <button class="btn-ai" data-ai-entry="${entryIdx}" data-ai-bullet="${bIdx}" data-type="${type}">AI优化</button>
         ${entry.bullets.length > 1 ? `<button class="btn-icon" data-rm-bullet-entry="${entryIdx}" data-rm-bullet="${bIdx}" data-type="${type}">✕</button>` : ''}
@@ -157,4 +157,9 @@ export { renderBullets };
 
 function esc(str) {
   return (str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function clean(str) {
+  if (!str) return '';
+  return String(str).replace(/\u200B|\uFEFF/g, '').replace(/\u00A0/g, ' ').trim();
 }

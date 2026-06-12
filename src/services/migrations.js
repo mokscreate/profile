@@ -9,13 +9,21 @@
 
 import { reformatLibrary } from './library-cleanup.js';
 
-export const LATEST_CONTENT_VERSION = 1;
+export const LATEST_CONTENT_VERSION = 2;
 
 const MIGRATIONS = [
   {
     version: 1,
     name: '清洗历史导入残留的排版格式',
     run(data) {
+      reformatLibrary(data.library);
+    }
+  },
+  {
+    version: 2,
+    name: '去除零宽字符与 NBSP（修复导入后造成的布局偏移）',
+    run(data) {
+      // reformatLibrary 中使用的 cleanText 已更新，复用它以清洗一遍
       reformatLibrary(data.library);
     }
   }

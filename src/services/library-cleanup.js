@@ -112,3 +112,38 @@ export function findDuplicates(library) {
   }
   return groups;
 }
+
+// 检测潜在会破坏编辑器/渲染的字段（例如包含 HTML 标签、内联样式或大量不可见字符）
+export function detectProblems(library) {
+  const problems = [];
+  const checkFields = ['company','role','name','title','school','major','degree','startDate','endDate'];
+  function hasHtml(s){ return /<[^>]+>/.test(s); }
+  function hasWeirdChars(s){ return /\u200B|\uFEFF|\u00A0/.test(s); }
+
+  for (const section of ['experiences','projects','education','awards']) {
+    for (const item of library[section] || []) {
+      for (const f of checkFields) {
+        if (item[f] && typeof item[f] === 'string') {
+          if (hasHtml(item[f]) || hasWeirdChars(item[f])) {
+            problems.push({ type: section, id: item.id, field: f, value: item[f], issue: hasHtml(item[f]) ? 'html' : 'weird' });
+          }
+        }
+      }
+      if (Array.isArray(item.bullets)) {
+        item.bullets.forEach(b => {
+          const v = (b.enhanced || b.original || '');
+          if (hasHtml(v) || hasWeirdChars(v)) {
+            problems.push({ type: section, id: item.id, field: 'bullets', value: v, issue: hasHtml(v) ? 'html' : 'weird' });
+          }
+        });
+      }
+    }
+  }
+  return problems;
+}
+
+export function cleanProblemValue(str) {
+  if (!str) return '';
+  // remove HTML tags and zero-width / BOM / NBSP
+  return String(str).replace(/<[^>]+>/g, '').replace(/\u200B|\uFEFF/g, '').replace(/\u00A0/g, ' ').trim();
+}

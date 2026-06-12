@@ -12,8 +12,9 @@ import { libraryToDocx } from '../services/export-docx.js';
 import { downloadText } from '../services/download.js';
 import { extractTextFromFile } from '../services/file-parse.js';
 import { createVoiceInput, isVoiceSupported } from '../services/voice-input.js';
-import { reformatLibrary, findDuplicates } from '../services/library-cleanup.js';
+import { reformatLibrary, findDuplicates, detectProblems, cleanProblemValue } from '../services/library-cleanup.js';
 import { cleanText as clean } from '../utils/text.js';
+import { startGuide } from '../components/guide-wizard.js';
 
 let activeTab = 'work';
 
@@ -30,6 +31,7 @@ export function renderLibrary(container) {
           <button class="btn btn-ghost btn-sm" id="lib-cleanup">🧹 整理</button>
           <button class="btn btn-ghost btn-sm" id="lib-export-md">导出整库 MD</button>
           <button class="btn btn-ghost btn-sm" id="lib-export-docx">导出整库 Word</button>
+          <button class="btn btn-primary btn-sm" id="lib-ai-guide">✨ AI 完善</button>
         </div>
       </div>
 
@@ -325,6 +327,10 @@ function bindEvents(container) {
 
   container.querySelector('#lib-cleanup').addEventListener('click', () => runCleanup(container));
 
+  container.querySelector('#lib-ai-guide').addEventListener('click', () => {
+    startGuide({ onClose: () => renderLibrary(container) });
+  });
+
   container.querySelector('#lib-export-md').addEventListener('click', () => {
     const profile = getProfile();
     const library = getLibrary();
@@ -357,13 +363,14 @@ function bindEvents(container) {
 function runCleanup(container) {
   const library = getLibrary();
   const stats = reformatLibrary(library);
+  const problems = detectProblems(library);
   persist();
   const dups = findDuplicates(library);
   renderList(container);
-  showCleanupModal(container, stats, dups);
+  showCleanupModal(container, stats, dups, problems);
 }
 
-function showCleanupModal(container, stats, dups) {
+function showCleanupModal(container, stats, dups, problems = []) {
   const overlay = document.getElementById('modal-overlay');
   const content = document.getElementById('modal-content');
   overlay.classList.remove('hidden');
@@ -395,9 +402,25 @@ function showCleanupModal(container, stats, dups) {
     <h3>🧹 整理经历库</h3>
     <p class="modal-desc">${fmtMsg}</p>
     ${dupHtml}
+    ${problems.length ? `
+      <p class="modal-desc" style="margin-top:16px">发现 ${problems.length} 条可能导致显示/格式问题的内容，勾选后可选择「清理文本」或「删除条目」：</p>
+      <div class="dup-list">
+        ${problems.map((p, pi) => `
+          <div class="dup-group">
+            <div class="dup-group-title">${p.type} · ${esc(p.field)}</div>
+            <label class="dup-item">
+              <input type="checkbox" class="problem-cb" data-type="${p.type}" data-id="${p.id}" data-field="${p.field}" data-idx="${pi}" checked>
+              <span class="dup-item-title">${esc((p.value||'').slice(0,80))}${(p.value||'').length>80? '...':''}</span>
+              <span class="dup-item-meta">${p.issue === 'html' ? '包含 HTML' : '包含不可见字符'}</span>
+            </label>
+          </div>
+        `).join('')}
+      </div>
+    ` : ''}
     <div class="modal-actions">
       <button class="btn btn-secondary" id="cleanup-close">完成</button>
       ${dups.length ? `<button class="btn btn-primary" id="cleanup-apply">删除勾选项</button>` : ''}
+      ${problems.length ? `<button class="btn btn-primary" id="cleanup-clean">清理勾选项</button>` : ''}
     </div>
   `;
 
@@ -415,6 +438,32 @@ function showCleanupModal(container, stats, dups) {
       overlay.classList.add('hidden');
       renderLibrary(container);
       if (removed) alert(`已删除 ${removed} 个重复条目`);
+    });
+  }
+
+  const cleanBtn = document.getElementById('cleanup-clean');
+  if (cleanBtn) {
+    cleanBtn.addEventListener('click', () => {
+      const checked = content.querySelectorAll('.problem-cb:checked');
+      const lib = getLibrary();
+      let cleaned = 0;
+      checked.forEach(cb => {
+        const type = cb.dataset.type;
+        const id = cb.dataset.id;
+        const field = cb.dataset.field;
+        const item = (lib[type] || []).find(i => i.id === id);
+        if (!item) return;
+        if (field === 'bullets') {
+          item.bullets = (item.bullets || []).map(b => ({ ...b, original: cleanProblemValue(b.original), enhanced: cleanProblemValue(b.enhanced) }));
+        } else {
+          item[field] = cleanProblemValue(item[field]);
+        }
+        cleaned++;
+      });
+      if (cleaned) persist();
+      overlay.classList.add('hidden');
+      renderLibrary(container);
+      if (cleaned) alert(`已清理 ${cleaned} 个字段/条目`);
     });
   }
 }
@@ -509,6 +558,9 @@ function showImportModal(container) {
       await importFromText(text);
       overlay.classList.add('hidden');
       renderLibrary(container);
+      if (confirm('简历已导入！是否立即用 AI 点对点完善经历描述？')) {
+        startGuide({ onClose: () => renderLibrary(container) });
+      }
     } catch (err) {
       alert('提取失败: ' + err.message);
       document.getElementById('import-submit').textContent = 'AI 提取';

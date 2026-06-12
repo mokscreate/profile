@@ -4,7 +4,10 @@
 export function cleanText(str) {
   if (!str) return '';
   return String(str)
+    // normalize whitespace and remove zero-width / BOM / NBSP
     .replace(/[\t ]+/g, ' ')
+    .replace(/\u200B|\uFEFF/g, '')
+    .replace(/\u00A0/g, ' ')
     .replace(/^[\s•·‣◦▪▫■●○◆◇*\-–—>·]+/, '')
     .replace(/^\s*[（(]?\d+[)）.、]\s*/, '')
     .replace(/\s{2,}/g, ' ')

@@ -37,21 +37,21 @@ function renderProjList(data) {
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">项目名称</label>
-          <input class="form-input proj-field" data-idx="${i}" data-field="name" value="${esc(proj.name)}" placeholder="项目名称">
+          <input class="form-input proj-field" data-idx="${i}" data-field="name" value="${esc(clean(proj.name))}" placeholder="项目名称">
         </div>
         <div class="form-group">
           <label class="form-label">你的角色</label>
-          <input class="form-input proj-field" data-idx="${i}" data-field="role" value="${esc(proj.role)}" placeholder="如：负责人">
+          <input class="form-input proj-field" data-idx="${i}" data-field="role" value="${esc(clean(proj.role))}" placeholder="如：负责人">
         </div>
       </div>
       <div class="form-row">
         <div class="form-group">
           <label class="form-label">开始时间</label>
-          <input class="form-input proj-field" data-idx="${i}" data-field="startDate" value="${esc(proj.startDate)}" placeholder="YYYY.MM">
+          <input class="form-input proj-field" data-idx="${i}" data-field="startDate" value="${esc(clean(proj.startDate))}" placeholder="YYYY.MM">
         </div>
         <div class="form-group">
           <label class="form-label">结束时间</label>
-          <input class="form-input proj-field" data-idx="${i}" data-field="endDate" value="${esc(proj.endDate)}" placeholder="YYYY.MM 或 至今">
+          <input class="form-input proj-field" data-idx="${i}" data-field="endDate" value="${esc(clean(proj.endDate))}" placeholder="YYYY.MM 或 至今">
         </div>
       </div>
       <div class="form-group">
@@ -73,7 +73,7 @@ function renderBulletsProj(entry, entryIdx) {
   const container = document.getElementById(`bullets-proj-${entryIdx}`);
   container.innerHTML = entry.bullets.map((bullet, bIdx) => `
     <div class="bullet-item" data-bullet-idx="${bIdx}">
-      <textarea class="form-textarea bullet-text" data-entry="${entryIdx}" data-bullet="${bIdx}" placeholder="描述项目内容和你的贡献...">${esc(bullet.useEnhanced && bullet.enhanced ? bullet.enhanced : bullet.original)}</textarea>
+      <textarea class="form-textarea bullet-text" data-entry="${entryIdx}" data-bullet="${bIdx}" placeholder="描述项目内容和你的贡献...">${esc(clean(bullet.useEnhanced && bullet.enhanced ? bullet.enhanced : bullet.original))}</textarea>
       <div class="bullet-actions">
         <button class="btn-ai" data-ai-entry="${entryIdx}" data-ai-bullet="${bIdx}" data-type="proj">AI优化</button>
         ${entry.bullets.length > 1 ? `<button class="btn-icon" data-rm-bullet-entry="${entryIdx}" data-rm-bullet="${bIdx}" data-type="proj">✕</button>` : ''}
@@ -153,4 +153,10 @@ function bindProjEvents(data) {
 
 function esc(str) {
   return (str || '').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+}
+
+function clean(str) {
+  if (!str) return '';
+  // remove zero-width and BOM, replace non-breaking spaces with regular spaces, then trim
+  return String(str).replace(/\u200B|\uFEFF/g, '').replace(/\u00A0/g, ' ').trim();
 }

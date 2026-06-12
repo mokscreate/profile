@@ -2,9 +2,10 @@ import { renderHome } from './pages/home.js';
 import { renderLibrary } from './pages/library.js';
 import { renderEditor } from './pages/editor.js';
 import { renderUserSelect } from './pages/user-select.js';
-import { getApiKey, setApiKey, initStorage } from './services/storage.js';
+import { getApiKey, setApiKey, initStorage, getAppData, persist } from './services/storage.js';
 import { migrateFromLegacy, getActiveUser, getActiveUserId, setActiveUser } from './services/user-manager.js';
 import { setNavigate } from './router.js';
+import { reformatLibrary } from './services/library-cleanup.js';
 
 let currentView = 'home';
 let currentResumeId = null;
@@ -72,6 +73,21 @@ document.addEventListener('DOMContentLoaded', () => {
     render();
   } else {
     initStorage(activeUserId);
+    // One-off forced cleanup: run library reformat to remove zero-width/NBSP from existing data
+    try {
+      const CLEAN_FLAG = 'resume-craft-cleaned-v2';
+      if (!localStorage.getItem(CLEAN_FLAG)) {
+        const appData = getAppData();
+        if (appData && appData.library) {
+          reformatLibrary(appData.library);
+          persist();
+          localStorage.setItem(CLEAN_FLAG, '1');
+          console.info('One-time library cleanup applied.');
+        }
+      }
+    } catch (e) {
+      console.error('Forced library cleanup failed:', e);
+    }
     updateUserChip();
     render();
   }
