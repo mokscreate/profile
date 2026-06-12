@@ -1,0 +1,108 @@
+/* === 移动端适配 === */
+
+/* 平板及以下 */
+@media (max-width: 768px) {
+  /* 头部紧凑化 */
+  .app-header {
+    padding: var(--space-sm) var(--space-md);
+  }
+  .app-subtitle { display: none; }
+  .header-right { gap: var(--space-xs); }
+  #btn-settings { padding: 5px 10px; font-size: var(--fs-xs); }
+  .user-chip { padding: 4px 10px; font-size: var(--fs-xs); }
+
+  /* 通用页面留白收紧 */
+  .home-page,
+  .library-page { padding: var(--space-md); }
+
+  /* 首页卡片单列 */
+  .home-grid {
+    grid-template-columns: 1fr;
+    gap: var(--space-md);
+    margin-bottom: var(--space-lg);
+  }
+  .home-card { padding: var(--space-lg); }
+
+  /* 表单两列改单列 */
+  .form-row { flex-direction: column; }
+
+  /* 经历库头部允许换行，操作按钮占满下一行 */
+  .library-header { flex-wrap: wrap; }
+  .library-header h2 { font-size: var(--fs-md); }
+  .library-header-actions {
+    margin-left: 0;
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  /* 标签栏横向滚动，避免挤压 */
+  .library-tabs {
+    overflow-x: auto;
+    flex-wrap: nowrap;
+    -webkit-overflow-scrolling: touch;
+  }
+  .tab { white-space: nowrap; }
+
+  .library-toolbar { flex-wrap: wrap; }
+
+  /* === 编辑器：双栏改上下堆叠 === */
+  .editor-page { height: auto; min-height: calc(100vh - 49px); }
+  .editor-header { flex-wrap: wrap; }
+  .editor-title-input {
+    order: 3;
+    flex-basis: 100%;
+    margin-top: var(--space-xs);
+  }
+  .editor-actions { flex-wrap: wrap; }
+
+  .editor-body {
+    flex-direction: column;
+    overflow: visible;
+  }
+  .editor-left {
+    width: 100%;
+    min-width: 0;
+    overflow-y: visible;
+    border-right: none;
+    border-bottom: 1px solid var(--color-border);
+  }
+  .editor-right { overflow: visible; }
+  .preview-wrapper {
+    overflow-x: auto;
+    padding: var(--space-md);
+  }
+
+  /* 弹窗在小屏上更贴边、内边距收紧 */
+  .modal-content {
+    width: 94%;
+    padding: var(--space-lg);
+    max-height: 85vh;
+  }
+
+  /* 简历卡片操作区换行 */
+  .resume-card { flex-wrap: wrap; gap: var(--space-sm); }
+}
+
+/* 手机竖屏 */
+@media (max-width: 480px) {
+  .app-title { font-size: var(--fs-md); }
+
+  /* 经历条目：删除按钮不被挤压 */
+  .lib-item { gap: var(--space-xs); }
+  .lib-item-title { font-size: var(--fs-sm); }
+
+  /* 选档案卡片更小一点，一行能放两个 */
+  .user-grid {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+  }
+  .user-card { padding: 1.5rem 1rem; }
+  .user-emoji { font-size: 2.25rem; }
+
+  /* 用户头像 chip 文字过长时截断 */
+  .user-chip {
+    max-width: 110px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+  }
+}
