@@ -188,6 +188,18 @@ ${qa || '（用户未提供）'}${globalText}${freeformText}
   return response.trim().replace(/^["“”]|["“”]$/g, '').trim();
 }
 
+/**
+ * 对用户补充的内容给出简短的 AI 确认回复（聊天式）。
+ */
+export async function acknowledgeInput(text) {
+  const response = await callDeepSeek([
+    { role: 'system', content: '你是一位轻松友好的简历顾问，正在和用户聊天式地完善简历。用户刚补充了一些背景信息，请用1-2句话确认你理解了，语气像朋友聊天一样自然，点出1-2个你会用到的关键信息即可，不要列举所有内容。30字以内，不要加任何标点符号结尾以外的符号。' },
+    { role: 'user', content: text }
+  ], { maxTokens: 80, temperature: 0.8 });
+  return response.trim();
+}
+
+
 function parseJson(response) {
   const cleaned = response.replace(/```json\n?/g, '').replace(/```\n?/g, '').trim();
   try {

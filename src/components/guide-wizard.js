@@ -1,4 +1,4 @@
-import { analyzeLibrary, rewriteBullet } from '../services/ai-guide.js';
+import { analyzeLibrary, rewriteBullet, acknowledgeInput } from '../services/ai-guide.js';
 import { getApiKey, getLibrary, updateLibraryItem } from '../services/storage.js';
 import { createVoiceInput, isVoiceSupported } from '../services/voice-input.js';
 
@@ -228,8 +228,20 @@ async function collectGlobalDump() {
     setInput(false);
     if (r === GENERATE) break;
     items.push(r);
-    await pause(80);
-    addAiMsg('好的，记住了~');
+    const typingEl = addTyping();
+    try {
+      const ack = await acknowledgeInput(r);
+      const ackEl = document.createElement('div');
+      ackEl.className = 'guide-msg ai';
+      ackEl.innerHTML = `<div class="guide-bubble">${esc(ack)}</div>`;
+      typingEl.replaceWith(ackEl);
+    } catch {
+      const fallbackEl = document.createElement('div');
+      fallbackEl.className = 'guide-msg ai';
+      fallbackEl.innerHTML = `<div class="guide-bubble">好的，记住了~</div>`;
+      typingEl.replaceWith(fallbackEl);
+    }
+    scrollBottom();
   }
 
   doneEl.remove();
@@ -311,9 +323,20 @@ async function collectAnswers(task) {
     if (r === SKIP || r === GENERATE) break;
 
     freeform.push(r);
-    // user bubble already shown by doSend
-    await pause(100);
-    addAiMsg('好的，记住了~');
+    const typingEl2 = addTyping();
+    try {
+      const ack = await acknowledgeInput(r);
+      const ackEl = document.createElement('div');
+      ackEl.className = 'guide-msg ai';
+      ackEl.innerHTML = `<div class="guide-bubble">${esc(ack)}</div>`;
+      typingEl2.replaceWith(ackEl);
+    } catch {
+      const fallbackEl = document.createElement('div');
+      fallbackEl.className = 'guide-msg ai';
+      fallbackEl.innerHTML = `<div class="guide-bubble">好的，记住了~</div>`;
+      typingEl2.replaceWith(fallbackEl);
+    }
+    scrollBottom();
   }
 
   generateEl.remove();
