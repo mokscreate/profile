@@ -1,5 +1,10 @@
 import { getApiKey } from './storage.js';
 
+// 开发环境走 Vite 代理（避免跨域）；生产环境直连 DeepSeek（api.deepseek.com 国内可直接访问）
+const API_URL = import.meta.env.DEV
+  ? '/api/deepseek/chat/completions'
+  : 'https://api.deepseek.com/chat/completions';
+
 export async function callDeepSeek(messages, options = {}) {
   const apiKey = getApiKey();
   if (!apiKey) {
@@ -16,18 +21,23 @@ export async function callDeepSeek(messages, options = {}) {
     body.response_format = { type: 'json_object' };
   }
 
-  const res = await fetch('/api/deepseek/chat/completions', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${apiKey}`
-    },
-    body: JSON.stringify(body)
-  });
+  let res;
+  try {
+    res = await fetch(API_URL, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${apiKey}`
+      },
+      body: JSON.stringify(body)
+    });
+  } catch (err) {
+    throw new Error('网络请求失败，可能是浏览器跨域限制。如果你在自部署站点遇到此问题，请联系管理员配置代理。');
+  }
 
   if (!res.ok) {
-    const err = await res.text();
-    throw new Error(`API 调用失败: ${res.status} ${err}`);
+    const errText = await res.text();
+    throw new Error(`API 调用失败: ${res.status} ${errText}`);
   }
 
   const json = await res.json();
