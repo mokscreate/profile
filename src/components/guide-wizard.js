@@ -6,20 +6,21 @@ let onCloseCb = null;
 let tasks = [];
 let acceptedCount = 0;
 let skippedCount = 0;
-let resolveInput = null;   // for waiting on open-text answer
-let resolveSkip = null;    // for waiting on task-level skip
-let activeChoiceEl = null; // choice row currently shown
+let resolveAnswer = null;  // unified: resolves on text send OR choice button click
+let resolveSkip = null;
+let activeChoiceEl = null;
 let msgContainer = null;
 let aborted = false;
 
 const SKIP = Symbol('skip');
+const GENERATE = Symbol('generate');
 
 export async function startGuide(opts = {}) {
   onCloseCb = opts.onClose ?? null;
   tasks = [];
   acceptedCount = 0;
   skippedCount = 0;
-  resolveInput = null;
+  resolveAnswer = null;
   resolveSkip = null;
   activeChoiceEl = null;
   aborted = false;
@@ -87,7 +88,7 @@ function wireFooter() {
 
   skipBtn.addEventListener('click', () => {
     cleanupPending();
-    if (resolveInput) { const fn = resolveInput; resolveInput = null; fn(SKIP); }
+    if (resolveAnswer) { const fn = resolveAnswer; resolveAnswer = null; fn(SKIP); }
     if (resolveSkip) { const fn = resolveSkip; resolveSkip = null; fn(SKIP); }
   });
 
@@ -114,13 +115,13 @@ function wireFooter() {
 function doSend() {
   const input = document.getElementById('guide-input');
   const val = input.value.trim();
-  if (!val || !resolveInput) return;
+  if (!val || !resolveAnswer) return;
   addUserMsg(val);
   input.value = '';
   input.style.height = 'auto';
   document.getElementById('guide-send').disabled = true;
-  const fn = resolveInput;
-  resolveInput = null;
+  const fn = resolveAnswer;
+  resolveAnswer = null;
   setInput(false);
   fn(val);
 }
@@ -161,7 +162,7 @@ async function runGuide() {
   );
   await pause(180);
   if (summary) { addAiMsg(summary); await pause(180); }
-  addAiMsg('我来一条一条问你几个小问题，帮你补上量化数据和 STAR 要素，把描述改得更专业。随时可以跳过不想改的~');
+  addAiMsg('我来一条一条问你几个问题。你也可以随时在输入框补充任何想说的，我会优先处理你补充的内容~ 随时可以跳过不想改的。');
 
   const go = await addActions([
     { label: '好，开始 →', primary: true, value: true },
@@ -169,12 +170,17 @@ async function runGuide() {
   ]);
   if (!go || aborted) { closeGuide(); return; }
 
-  // Process tasks — rewrite fires async so next task's Q&A starts immediately
+  // Global brain dump: let user offload everything before sequential Q&A
+  await pause(150);
+  addAiMsg('在逐条提问之前，你有没有想先说的？比如某段经历的具体数字、评语、背景情况……什么都可以，我会记住，改写时自动提取相关的。没有就直接点下面的按钮开始。');
+  const globalFreeform = await collectGlobalDump();
+  if (aborted) return;
+
   const pendingRewrites = [];
   for (let i = 0; i < tasks.length; i++) {
     if (aborted) return;
     updateProgress(i + 1, tasks.length);
-    const { answers, skipped } = await collectAnswers(tasks[i], i);
+    const { answers, freeform, skipped } = await collectAnswers(tasks[i]);
     if (aborted) return;
 
     if (skipped) {
@@ -187,12 +193,13 @@ async function runGuide() {
     const loadingEl = addLoadingMsg('让我帮你改写一下…');
     const rp = rewriteBullet(
       tasks[i],
-      tasks[i].questions.map((q, qi) => ({ question: q.text, answer: answers[qi] || '' }))
+      tasks[i].questions.map((q, qi) => ({ question: q.text, answer: answers[qi] || '' })),
+      freeform,
+      globalFreeform
     )
       .then(newText => { loadingEl.replaceWith(buildResultCard(tasks[i], newText)); scrollBottom(); })
       .catch(() => { loadingEl.replaceWith(buildErrorBubble()); scrollBottom(); });
     pendingRewrites.push(rp);
-    // Loop immediately continues to next task — rewrite runs in background
   }
 
   if (aborted) return;
@@ -208,6 +215,33 @@ async function runGuide() {
   if (close) closeGuide();
 }
 
+async function collectGlobalDump() {
+  const items = [];
+  let doneResolve = null;
+  const donePromise = new Promise(r => { doneResolve = r; });
+  const doneEl = addGenerateButton(() => { if (doneResolve) { doneResolve(); doneResolve = null; } }, '好，开始逐条优化 →');
+
+  while (true) {
+    if (aborted) { doneEl.remove(); setInput(false); return items; }
+    setInput(true, '想到什么就说什么，没有就直接点上面的按钮…');
+    const r = await Promise.race([waitAnswer(), donePromise.then(() => GENERATE)]);
+    setInput(false);
+    if (r === GENERATE) break;
+    items.push(r);
+    await pause(80);
+    addAiMsg('好的，记住了~');
+  }
+
+  doneEl.remove();
+  setInput(false);
+  if (items.length) {
+    await pause(100);
+    addAiMsg(`好，记住了 ${items.length} 条背景信息，改写时我会自动提取相关内容~`);
+    await pause(120);
+  }
+  return items;
+}
+
 async function collectAnswers(task) {
   await pause(120);
   addAiMsg(`<span class="guide-chip">${esc(task.entryTitle)}</span>`);
@@ -220,86 +254,120 @@ async function collectAnswers(task) {
   await pause(180);
 
   const answers = Array(task.questions.length).fill('');
+  const freeform = [];
+
   showSkip(true);
   const skipPromise = new Promise(r => { resolveSkip = r; });
 
+  // ── Structured questions (input always on, choice buttons as shortcuts) ──
   for (let qi = 0; qi < task.questions.length; qi++) {
-    if (aborted) { doCleanup(); return { answers, skipped: true }; }
+    if (aborted) { doCleanup(); return { answers, freeform, skipped: true }; }
     await pause(150);
     addAiMsg(esc(task.questions[qi].text));
     await pause(80);
 
     const q = task.questions[qi];
-    let answer;
 
-    if (q.format === 'boolean') {
-      const r = await Promise.race([pickChoice(['是', '否'], false), skipPromise.then(() => SKIP)]);
-      if (r === SKIP) { doCleanup(); return { answers, skipped: true }; }
-      answer = r;
-      addUserMsg(r);
-
-    } else if (q.format === 'choice') {
-      const r = await Promise.race([pickChoice(q.options, true), skipPromise.then(() => SKIP)]);
-      if (r === SKIP) { doCleanup(); return { answers, skipped: true }; }
-      answer = r;
-      addUserMsg(r);
-
-    } else {
-      setInput(true, '用一两句话回答，没有就留空…');
-      const r = await Promise.race([waitInput(), skipPromise.then(() => SKIP)]);
-      setInput(false);
-      if (r === SKIP) { doCleanup(); return { answers, skipped: true }; }
-      answer = r; // user message already added in doSend
+    // Show choice/boolean buttons as shortcuts (clicking them resolves resolveAnswer)
+    let choiceEl = null;
+    if (q.format === 'boolean' || q.format === 'choice') {
+      const opts = q.format === 'boolean' ? ['是', '否'] : (q.options || []);
+      choiceEl = addChoiceRow(opts, q.format === 'choice');
     }
 
-    answers[qi] = answer;
+    // Input is always active — user can type instead of clicking buttons
+    setInput(true, q.format === 'open' ? '用一两句话回答，没有就留空…' : '输入回答，或点上面的选项…');
+
+    const r = await Promise.race([waitAnswer(), skipPromise.then(() => SKIP)]);
+
+    setInput(false);
+    if (choiceEl && choiceEl.parentNode) { choiceEl.remove(); activeChoiceEl = null; }
+
+    if (r === SKIP) { doCleanup(); return { answers, freeform, skipped: true }; }
+    answers[qi] = r;
+    // user bubble already shown by doSend or choice button handler
   }
 
+  // ── Freeform phase: user can add anything before AI rewrites ──
+  await pause(150);
+  addAiMsg('还有要补充的吗？比如具体数据、背景细节、你觉得重要的细节，随便说~ 说完了点「生成优化版」。');
+
+  // generate button fires a one-time promise
+  let generateResolve = null;
+  const generatePromise = new Promise(r => { generateResolve = r; });
+  const generateEl = addGenerateButton(() => { if (generateResolve) { generateResolve(); generateResolve = null; } });
+
+  while (true) {
+    if (aborted) { generateEl.remove(); doCleanup(); return { answers, freeform, skipped: true }; }
+    setInput(true, '补充任何细节，AI 会优先处理你的内容…');
+
+    const r = await Promise.race([
+      waitAnswer(),
+      generatePromise.then(() => GENERATE),
+      skipPromise.then(() => SKIP)
+    ]);
+
+    setInput(false);
+    if (r === SKIP || r === GENERATE) break;
+
+    freeform.push(r);
+    // user bubble already shown by doSend
+    await pause(100);
+    addAiMsg('好的，记住了~');
+  }
+
+  generateEl.remove();
   showSkip(false);
   resolveSkip = null;
-  return { answers, skipped: false };
+  return { answers, freeform, skipped: false };
 }
 
 function doCleanup() {
   cleanupPending();
   showSkip(false);
   resolveSkip = null;
-  resolveInput = null;
+  resolveAnswer = null;
 }
 
-function waitInput() {
-  return new Promise(r => { resolveInput = r; });
+function waitAnswer() {
+  return new Promise(r => { resolveAnswer = r; });
 }
 
-function pickChoice(opts, hasOther) {
-  return new Promise(resolve => {
-    const el = document.createElement('div');
-    el.className = 'guide-msg choices';
-    activeChoiceEl = el;
+// ── Choice row (shortcuts; also resolves resolveAnswer) ───────────────────────
 
-    const row = document.createElement('div');
-    row.className = 'guide-choice-row';
+function addChoiceRow(opts, hasOther) {
+  const el = document.createElement('div');
+  el.className = 'guide-msg choices';
+  activeChoiceEl = el;
 
-    const finish = val => { activeChoiceEl = null; el.remove(); resolve(val); };
+  const row = document.createElement('div');
+  row.className = 'guide-choice-row';
 
-    opts.forEach(opt => {
-      const btn = document.createElement('button');
-      btn.className = 'guide-choice-btn';
-      btn.textContent = opt;
-      btn.addEventListener('click', () => {
-        if (hasOther && /其他|其它/.test(opt)) {
-          showOther(el, finish);
-        } else {
-          finish(opt);
-        }
-      });
-      row.appendChild(btn);
+  const finish = val => {
+    activeChoiceEl = null;
+    el.remove();
+    addUserMsg(val);
+    if (resolveAnswer) { const fn = resolveAnswer; resolveAnswer = null; setInput(false); fn(val); }
+  };
+
+  opts.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'guide-choice-btn';
+    btn.textContent = opt;
+    btn.addEventListener('click', () => {
+      if (hasOther && /其他|其它/.test(opt)) {
+        showOther(el, finish);
+      } else {
+        finish(opt);
+      }
     });
-
-    el.appendChild(row);
-    msgContainer.appendChild(el);
-    scrollBottom();
+    row.appendChild(btn);
   });
+
+  el.appendChild(row);
+  msgContainer.appendChild(el);
+  scrollBottom();
+  return el;
 }
 
 function showOther(parentEl, onConfirm) {
@@ -385,6 +453,22 @@ function addActions(actions) {
   });
 }
 
+function addGenerateButton(onClick, label = '生成优化版 ✨') {
+  const el = document.createElement('div');
+  el.className = 'guide-msg actions';
+  const row = document.createElement('div');
+  row.className = 'guide-action-row';
+  const btn = document.createElement('button');
+  btn.className = 'btn btn-primary btn-sm';
+  btn.textContent = label;
+  btn.addEventListener('click', onClick);
+  row.appendChild(btn);
+  el.appendChild(row);
+  msgContainer.appendChild(el);
+  scrollBottom();
+  return el;
+}
+
 function buildResultCard(task, newText) {
   const el = document.createElement('div');
   el.className = 'guide-msg result';
@@ -462,7 +546,7 @@ function showOverlay(show) {
 
 function closeGuide() {
   aborted = true;
-  if (resolveInput) { const fn = resolveInput; resolveInput = null; fn(SKIP); }
+  if (resolveAnswer) { const fn = resolveAnswer; resolveAnswer = null; fn(SKIP); }
   if (resolveSkip) { const fn = resolveSkip; resolveSkip = null; fn(SKIP); }
   showOverlay(false);
   if (onCloseCb) onCloseCb();

@@ -150,20 +150,31 @@ ${block}
  * 根据用户对追问的回答，重写一条 bullet。
  * @param {object} task 来自 analyzeLibrary 的任务
  * @param {Array<{question:string, answer:string}>} answers 已回答的问答对
+ * @param {string[]} freeform 当前条目问答结束后用户补充的内容
+ * @param {string[]} globalContext 开始前用户一次性倾倒的背景信息（跨条目）
  * @returns {string} 改写后的文本
  */
-export async function rewriteBullet(task, answers) {
+export async function rewriteBullet(task, answers, freeform = [], globalContext = []) {
   const qa = answers
     .filter(a => a.answer && a.answer.trim())
     .map(a => `问：${a.question}\n答：${a.answer.trim()}`)
     .join('\n');
 
+  const globalText = globalContext.filter(f => f && f.trim()).length
+    ? '\n\n【用户提前补充的背景信息（从中提取与本条相关的内容使用，不相关的忽略）】\n当前条目：' + task.entryTitle + '\n' + globalContext.filter(f => f.trim()).map(f => `- ${f}`).join('\n')
+    : '';
+
+  const freeformText = freeform.filter(f => f && f.trim()).length
+    ? '\n\n【用户针对本条的补充（优先处理，必须融入）】\n' + freeform.filter(f => f.trim()).map(f => `- ${f}`).join('\n')
+    : '';
+
   const prompt = `原始描述：${task.bulletText}
+条目：${task.entryTitle}
 
 这条描述可以补充的方向：${task.issues.join('、') || '可以更专业'}
 
-用户补充的信息：
-${qa || '（用户未提供额外信息）'}
+用户对追问的回答：
+${qa || '（用户未提供）'}${globalText}${freeformText}
 
 请在保留原文所有工具、技术、平台、方法等具体细节的前提下，把用户补充的信息融入原文，强化 STAR 要素和量化结果。
 严禁删除原文中已提到的任何具体名词（工具名、技术名、平台名等）。
