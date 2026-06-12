@@ -191,24 +191,24 @@ async function runGuide() {
     }
 
     const loadingEl = addLoadingMsg('让我帮你改写一下…');
-    const rp = rewriteBullet(
-      tasks[i],
-      tasks[i].questions.map((q, qi) => ({ question: q.text, answer: answers[qi] || '' })),
-      freeform,
-      globalFreeform
-    )
-      .then(newText => { loadingEl.replaceWith(buildResultCard(tasks[i], newText)); scrollBottom(); })
-      .catch(() => { loadingEl.replaceWith(buildErrorBubble()); scrollBottom(); });
-    pendingRewrites.push(rp);
+    try {
+      const newText = await rewriteBullet(
+        tasks[i],
+        tasks[i].questions.map((q, qi) => ({ question: q.text, answer: answers[qi] || '' })),
+        freeform,
+        globalFreeform
+      );
+      loadingEl.replaceWith(buildResultCard(tasks[i], newText));
+    } catch {
+      loadingEl.replaceWith(buildErrorBubble());
+    }
+    scrollBottom();
   }
 
   if (aborted) return;
   updateProgress(tasks.length, tasks.length);
   await pause(200);
-  addAiMsg('问题都问完了 🎊 上面的优化版随时可以采用，也可以编辑后再采用~');
-
-  await Promise.allSettled(pendingRewrites);
-  if (aborted) return;
+  addAiMsg('全部改写完成 🎊 上面的优化版随时可以采用，也可以编辑后再采用~');
   await pause(300);
   addAiMsg(`这次共采用了 <strong>${acceptedCount}</strong> 条优化，加油！💪`);
   const close = await addActions([{ label: '完成，关闭', primary: true, value: true }]);
