@@ -40,6 +40,18 @@ export function persist() {
   save();
 }
 
+// 导出当前用户的完整数据（深拷贝，供备份用）
+export function exportData() {
+  return JSON.parse(JSON.stringify(getAppData()));
+}
+
+// 用导入的数据整体替换当前用户的数据
+export function replaceData(newData) {
+  if (!STORAGE_KEY) throw new Error('Storage not initialized. Call initStorage(userId) first.');
+  _data = newData;
+  save();
+}
+
 // === Profile ===
 export function getProfile() {
   return getAppData().profile;

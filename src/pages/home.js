@@ -1,5 +1,6 @@
 import { navigate } from '../router.js';
 import { getLibrary, getResumes, createNewResume, deleteResume } from '../services/storage.js';
+import { exportBackup, parseBackup, applyBackup } from '../services/backup.js';
 
 export function renderHome(container) {
   const library = getLibrary();
@@ -44,6 +45,14 @@ export function renderHome(container) {
           `).join('')}
         </div>
       </div>` : ''}
+
+      <div class="home-backup">
+        <span class="home-backup-label">数据备份</span>
+        <button class="btn btn-ghost btn-sm" id="btn-export-backup">导出备份</button>
+        <button class="btn btn-ghost btn-sm" id="btn-import-backup">导入备份</button>
+        <input type="file" id="backup-file" accept=".json,application/json" hidden>
+        <span class="home-backup-hint">导出后可在另一台设备「导入备份」恢复你的全部数据</span>
+      </div>
     </div>
   `;
 
@@ -74,6 +83,40 @@ export function renderHome(container) {
     card.addEventListener('click', () => {
       navigate('editor', { resumeId: card.dataset.id });
     });
+  });
+
+  // 数据备份：导出
+  container.querySelector('#btn-export-backup').addEventListener('click', () => {
+    try {
+      exportBackup();
+    } catch (err) {
+      alert('导出失败：' + err.message);
+    }
+  });
+
+  // 数据备份：导入
+  const backupFile = container.querySelector('#backup-file');
+  container.querySelector('#btn-import-backup').addEventListener('click', () => backupFile.click());
+  backupFile.addEventListener('change', async () => {
+    const file = backupFile.files[0];
+    if (!file) return;
+    try {
+      const text = await file.text();
+      const { data, meta } = parseBackup(text);
+      const who = meta.userName ? `「${meta.userName}」` : '';
+      const when = meta.exportedAt ? `（备份于 ${meta.exportedAt.slice(0, 10)}）` : '';
+      if (!confirm(`即将用备份${who}${when}覆盖当前档案的全部数据，且不可撤销。\n\n确定导入吗？`)) {
+        backupFile.value = '';
+        return;
+      }
+      applyBackup(data);
+      alert('导入成功！');
+      renderHome(container);
+    } catch (err) {
+      alert('导入失败：' + err.message);
+    } finally {
+      backupFile.value = '';
+    }
   });
 }
 
