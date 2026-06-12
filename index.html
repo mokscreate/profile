@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Resume Craft - AI 简历生成器</title>
+  <link rel="stylesheet" href="/src/styles/variables.css">
+  <link rel="stylesheet" href="/src/styles/layout.css">
+  <link rel="stylesheet" href="/src/styles/form.css">
+  <link rel="stylesheet" href="/src/styles/chat.css">
+  <link rel="stylesheet" href="/src/styles/preview.css">
+  <link rel="stylesheet" href="/src/styles/user-select.css">
+  <link rel="stylesheet" href="/src/styles/print.css">
+</head>
+<body>
+  <div id="app">
+    <header class="app-header">
+      <div class="header-left">
+        <h1 class="app-title" id="nav-home">Resume Craft</h1>
+        <span class="app-subtitle">AI 智能简历生成器</span>
+      </div>
+      <div class="header-right">
+        <span class="user-chip" id="user-chip" style="display:none"></span>
+        <button class="btn btn-sm btn-ghost" id="btn-settings">设置 API Key</button>
+      </div>
+    </header>
+    <main id="main-content"></main>
+  </div>
+
+  <div id="modal-overlay" class="modal-overlay hidden">
+    <div class="modal-content" id="modal-content"></div>
+  </div>
+
+  <script type="module" src="/src/main.js"></script>
+</body>
+</html>

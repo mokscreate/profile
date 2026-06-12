@@ -1,0 +1,30 @@
+.a4-container {
+  width: 210mm;
+  min-height: 297mm;
+  background: white;
+  box-shadow: var(--shadow-lg);
+  padding: 15mm 18mm;
+  font-family: var(--font-body);
+  color: #1a1a1a;
+  line-height: 1.5;
+  position: relative;
+  transform-origin: top center;
+}
+
+.preview-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  padding: var(--space-lg);
+}
+
+.preview-placeholder {
+  text-align: center;
+  color: var(--color-text-secondary);
+  padding: 80px 40px;
+}
+
+.preview-placeholder h3 {
+  margin-bottom: var(--space-sm);
+  font-size: var(--fs-md);
+}

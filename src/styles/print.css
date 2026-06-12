@@ -1,0 +1,67 @@
+@media print {
+  body * {
+    visibility: hidden;
+  }
+
+  .print-target,
+  .print-target * {
+    visibility: visible;
+  }
+
+  .print-target {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 210mm;
+    min-height: 297mm;
+    margin: 0;
+    padding: 15mm 18mm;
+    box-shadow: none !important;
+    transform: none !important;
+  }
+
+  .app-header,
+  .editor-header,
+  .editor-left,
+  .jd-sidebar,
+  .modal-overlay {
+    display: none !important;
+  }
+
+  * {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* 分页控制：避免内容被页边界切断 */
+  .print-target .section {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-target .entry {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  .print-target .resume-header {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* 区块标题不要孤零零落在页尾 */
+  .print-target .section-title {
+    break-after: avoid;
+    page-break-after: avoid;
+  }
+
+  .print-target .bullets li {
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  @page {
+    size: A4;
+    margin: 0;
+  }
+}
