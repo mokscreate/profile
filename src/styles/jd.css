@@ -1,0 +1,85 @@
+/* === 编辑器 JD 区：AI 匹配分析助手 === */
+.jd-header-actions {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+}
+
+.jd-ai-panel {
+  margin-top: var(--space-sm);
+}
+
+.jd-ai {
+  display: flex;
+  flex-direction: column;
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-md);
+  background: var(--color-surface);
+  overflow: hidden;
+}
+
+.jd-ai-messages {
+  max-height: 360px;
+  overflow-y: auto;
+  padding: var(--space-sm);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 复用 guide.css 的 .guide-msg / .guide-bubble / .guide-voice-btn / .guide-send-btn */
+
+.jd-ai-dim {
+  color: var(--color-text-secondary);
+}
+
+.jd-ai-cursor {
+  display: inline-block;
+  width: 6px;
+  height: 13px;
+  background: var(--color-primary);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: jd-ai-blink 1s step-end infinite;
+}
+
+@keyframes jd-ai-blink {
+  50% { opacity: 0; }
+}
+
+.jd-ai-input-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 6px;
+  padding: 8px;
+  border-top: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.jd-ai-input {
+  flex: 1;
+  min-height: 36px;
+  max-height: 100px;
+  padding: 8px 12px;
+  border: 1px solid var(--color-border);
+  border-radius: 18px;
+  font-size: var(--fs-sm);
+  color: var(--color-text);
+  background: var(--color-surface);
+  resize: none;
+  line-height: 1.4;
+  overflow-y: auto;
+  box-sizing: border-box;
+}
+
+.jd-ai-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* JD 助手里的语音/发送按钮略小一点，适配窄侧栏 */
+.jd-ai-input-wrap .guide-voice-btn,
+.jd-ai-input-wrap .guide-send-btn {
+  width: 36px;
+  height: 36px;
+}

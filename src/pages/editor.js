@@ -4,6 +4,7 @@ import {
 } from '../services/storage.js';
 import { adjustScale } from '../components/preview.js';
 import { initAiPanel } from '../components/ai-chat.js';
+import { initJdAssistant } from '../components/jd-assistant.js';
 import { templates } from '../templates/index.js';
 import { resumeToMarkdown } from '../services/export-md.js';
 import { resumeToDocx } from '../services/export-docx.js';
@@ -85,9 +86,13 @@ export function renderEditor(container, id) {
           <div class="jd-sidebar" id="jd-sidebar">
             <div class="jd-header">
               <span>JD 参考</span>
-              <button class="btn btn-ghost btn-xs" id="jd-toggle">收起</button>
+              <div class="jd-header-actions">
+                <button class="btn btn-primary btn-xs" id="jd-analyze">🎯 AI 匹配分析</button>
+                <button class="btn btn-ghost btn-xs" id="jd-toggle">收起</button>
+              </div>
             </div>
             <textarea id="jd-text" placeholder="粘贴目标职位描述(JD)，AI 将根据 JD 优化你的经历..." rows="6">${esc(resume.jd || '')}</textarea>
+            <div id="jd-ai-panel" class="jd-ai-panel"></div>
           </div>
           <div class="preview-wrapper">
             <div id="resume-preview" class="a4-container print-target"></div>
@@ -250,6 +255,9 @@ function bindEditorEvents(container) {
     });
   });
 
+  container.querySelector('#jd-text').addEventListener('input', (e) => {
+    resume.jd = e.target.value;  // 保持内存最新，AI 分析即时可用
+  });
   container.querySelector('#jd-text').addEventListener('change', (e) => {
     resume.jd = e.target.value;
     updateResume(resumeId, resume);
@@ -275,6 +283,7 @@ function bindEditorEvents(container) {
   container.querySelector('#btn-ai-recommend').addEventListener('click', () => aiRecommend());
 
   initAiPanel(document.getElementById('ai-panel'), resume, () => renderResumePreview());
+  initJdAssistant(document.getElementById('jd-ai-panel'), resume, container.querySelector('#jd-analyze'));
 }
 
 async function aiRecommend() {
