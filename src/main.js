@@ -1,6 +1,7 @@
 import { renderHome } from './pages/home.js';
 import { renderLibrary } from './pages/library.js';
 import { renderEditor } from './pages/editor.js';
+import { renderPolish } from './pages/polish.js';
 import { renderUserSelect } from './pages/user-select.js';
 import { getApiKey, setApiKey, initStorage, getAppData, persist } from './services/storage.js';
 import { migrateFromLegacy, getActiveUser, getActiveUserId, setActiveUser } from './services/user-manager.js';
@@ -36,6 +37,9 @@ function render() {
       break;
     case 'editor':
       renderEditor(main, currentResumeId);
+      break;
+    case 'polish':
+      renderPolish(main);
       break;
     default:
       renderHome(main);

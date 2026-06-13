@@ -1,0 +1,298 @@
+/* === AI 润色页面：双栏 === */
+.polish-page {
+  display: flex;
+  flex-direction: column;
+  height: calc(100vh - 56px); /* 减去 app-header */
+  min-height: 0;
+}
+
+.polish-header {
+  display: flex;
+  align-items: center;
+  gap: var(--space-md);
+  padding: var(--space-sm) var(--space-md);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.polish-header h2 {
+  font-size: var(--fs-md);
+  font-weight: 600;
+  flex: 1;
+}
+
+/* 顶部两栏切换（仅移动端显示） */
+.polish-pane-tabs {
+  display: none;
+  gap: 4px;
+  background: var(--color-bg);
+  border-radius: var(--radius-md);
+  padding: 3px;
+}
+
+.polish-tab {
+  border: none;
+  background: none;
+  padding: 6px 14px;
+  border-radius: var(--radius-sm);
+  font-size: var(--fs-sm);
+  color: var(--color-text-secondary);
+}
+
+.polish-tab.active {
+  background: var(--color-surface);
+  color: var(--color-primary);
+  font-weight: 600;
+  box-shadow: var(--shadow-sm);
+}
+
+/* === Body 双栏 === */
+.polish-body {
+  flex: 1;
+  display: flex;
+  min-height: 0;
+}
+
+.polish-col {
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  min-width: 0;
+}
+
+.polish-col-resume {
+  flex: 0 0 48%;
+  border-right: 1px solid var(--color-border);
+  background: var(--color-bg);
+}
+
+.polish-col-chat {
+  flex: 1;
+  background: var(--color-surface);
+}
+
+.polish-col-head {
+  padding: 10px var(--space-md);
+  font-size: var(--fs-sm);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* === 左栏：简历内容 === */
+.polish-resume {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md) var(--space-lg);
+}
+
+.polish-empty {
+  color: var(--color-text-secondary);
+  font-size: var(--fs-sm);
+  padding: var(--space-lg);
+  text-align: center;
+}
+
+.polish-section {
+  margin-bottom: var(--space-lg);
+}
+
+.polish-section-title {
+  font-size: var(--fs-base);
+  font-weight: 700;
+  color: var(--color-primary);
+  border-bottom: 2px solid var(--color-border);
+  padding-bottom: 4px;
+  margin-bottom: var(--space-sm);
+}
+
+.polish-entry {
+  margin-bottom: var(--space-md);
+}
+
+.polish-entry-title {
+  font-weight: 600;
+  font-size: var(--fs-base);
+  color: var(--color-text);
+}
+
+.polish-entry-meta {
+  font-size: var(--fs-xs);
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+.polish-bullets {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.polish-bullet {
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 6px;
+  padding: 5px 8px 5px 16px;
+  font-size: var(--fs-sm);
+  line-height: 1.55;
+  border-radius: var(--radius-sm);
+  transition: background 0.2s;
+}
+
+.polish-bullet::before {
+  content: '•';
+  position: absolute;
+  left: 4px;
+  color: var(--color-text-secondary);
+}
+
+.polish-bullet-text {
+  flex: 1;
+}
+
+.polish-bullet.changed {
+  background: #f0fdf4;
+}
+
+.polish-bullet.changed .polish-bullet-text {
+  color: #065f46;
+}
+
+.polish-flash {
+  animation: polish-flash-anim 1.6s ease;
+}
+
+@keyframes polish-flash-anim {
+  0%   { background: #fef9c3; }
+  100% { background: transparent; }
+}
+
+.polish-bullet.changed.polish-flash {
+  animation: polish-flash-green 1.6s ease;
+}
+@keyframes polish-flash-green {
+  0%   { background: #bbf7d0; }
+  100% { background: #f0fdf4; }
+}
+
+.polish-revert {
+  border: none;
+  background: none;
+  color: var(--color-text-secondary);
+  font-size: 13px;
+  padding: 0 4px;
+  border-radius: var(--radius-sm);
+  flex-shrink: 0;
+  opacity: 0.6;
+  transition: opacity 0.15s, color 0.15s;
+}
+
+.polish-revert:hover {
+  opacity: 1;
+  color: var(--color-primary);
+}
+
+.polish-empty-bullet {
+  color: var(--color-text-secondary);
+  font-style: italic;
+}
+
+.polish-entry.readonly {
+  opacity: 0.85;
+}
+
+/* === 右栏：对话 === */
+.polish-messages {
+  flex: 1;
+  overflow-y: auto;
+  padding: var(--space-md);
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+/* 复用 guide.css 的 .guide-msg / .guide-bubble / .guide-result-card 等 */
+
+.polish-card-target {
+  font-size: var(--fs-xs);
+  font-weight: 600;
+  color: var(--color-text-secondary);
+  margin-bottom: 4px;
+}
+
+/* 流式光标 */
+.polish-cursor {
+  display: inline-block;
+  width: 7px;
+  height: 14px;
+  background: var(--color-primary);
+  margin-left: 2px;
+  vertical-align: text-bottom;
+  animation: polish-blink 1s step-end infinite;
+}
+
+@keyframes polish-blink {
+  50% { opacity: 0; }
+}
+
+/* === 底部输入区 === */
+.polish-footer {
+  border-top: 1px solid var(--color-border);
+  padding: 10px var(--space-md);
+  flex-shrink: 0;
+  background: var(--color-surface);
+}
+
+.polish-input-wrap {
+  display: flex;
+  align-items: flex-end;
+  gap: 8px;
+}
+
+.polish-input {
+  flex: 1;
+  min-height: 40px;
+  max-height: 140px;
+  padding: 10px 14px;
+  border: 1px solid var(--color-border);
+  border-radius: 20px;
+  font-size: var(--fs-base);
+  color: var(--color-text);
+  background: var(--color-bg);
+  resize: none;
+  line-height: 1.4;
+  overflow-y: auto;
+  transition: border-color 0.2s;
+  box-sizing: border-box;
+}
+
+.polish-input:focus {
+  outline: none;
+  border-color: var(--color-primary);
+}
+
+/* === 移动端：双栏改为 tab 切换 === */
+@media (max-width: 900px) {
+  .polish-page {
+    height: calc(100vh - 52px);
+  }
+  .polish-pane-tabs {
+    display: flex;
+  }
+  .polish-col-resume {
+    flex: 1 1 100%;
+    border-right: none;
+  }
+  .polish-col-chat {
+    display: none;
+  }
+  .polish-body.show-chat .polish-col-resume {
+    display: none;
+  }
+  .polish-body.show-chat .polish-col-chat {
+    display: flex;
+    flex: 1 1 100%;
+  }
+}

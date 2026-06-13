@@ -14,7 +14,6 @@ import { extractTextFromFile } from '../services/file-parse.js';
 import { createVoiceInput, isVoiceSupported } from '../services/voice-input.js';
 import { reformatLibrary, findDuplicates, detectProblems, cleanProblemValue } from '../services/library-cleanup.js';
 import { cleanText as clean } from '../utils/text.js';
-import { startGuide } from '../components/guide-wizard.js';
 
 let activeTab = 'work';
 
@@ -31,7 +30,7 @@ export function renderLibrary(container) {
           <button class="btn btn-ghost btn-sm" id="lib-cleanup">🧹 整理</button>
           <button class="btn btn-ghost btn-sm" id="lib-export-md">导出整库 MD</button>
           <button class="btn btn-ghost btn-sm" id="lib-export-docx">导出整库 Word</button>
-          <button class="btn btn-primary btn-sm" id="lib-ai-guide">✨ AI 完善</button>
+          <button class="btn btn-primary btn-sm" id="lib-ai-guide">✨ AI 润色</button>
         </div>
       </div>
 
@@ -328,7 +327,7 @@ function bindEvents(container) {
   container.querySelector('#lib-cleanup').addEventListener('click', () => runCleanup(container));
 
   container.querySelector('#lib-ai-guide').addEventListener('click', () => {
-    startGuide({ onClose: () => renderLibrary(container) });
+    navigate('polish');
   });
 
   container.querySelector('#lib-export-md').addEventListener('click', () => {
@@ -558,8 +557,8 @@ function showImportModal(container) {
       await importFromText(text);
       overlay.classList.add('hidden');
       renderLibrary(container);
-      if (confirm('简历已导入！是否立即用 AI 点对点完善经历描述？')) {
-        startGuide({ onClose: () => renderLibrary(container) });
+      if (confirm('简历已导入！是否立即用 AI 润色完善经历描述？')) {
+        navigate('polish');
       }
     } catch (err) {
       alert('提取失败: ' + err.message);

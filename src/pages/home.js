@@ -22,6 +22,11 @@ export function renderHome(container) {
           <h2>新建简历</h2>
           <p class="home-card-desc">从经历库中挑选，AI 帮你组合优化</p>
         </div>
+        <div class="home-card" id="card-polish">
+          <div class="home-card-icon">💬</div>
+          <h2>AI 润色</h2>
+          <p class="home-card-desc">左看简历右聊天，像和朋友一样自由打磨经历</p>
+        </div>
       </div>
 
       ${resumes.length ? `
@@ -61,6 +66,7 @@ export function renderHome(container) {
     const resume = createNewResume();
     navigate('editor', { resumeId: resume.id });
   });
+  container.querySelector('#card-polish').addEventListener('click', () => navigate('polish'));
 
   container.querySelectorAll('.resume-edit').forEach(btn => {
     btn.addEventListener('click', (e) => {
